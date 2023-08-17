@@ -1,0 +1,91 @@
+SELECT *
+FROM CBJ
+
+
+--Total number of home games by day of week
+
+SELECT Weekday, COUNT(*) AS TotalHomeGames
+FROM CBJ
+WHERE Location = 'H'
+GROUP BY Weekday
+
+
+--Calculate the number of home wins by day of week
+
+SELECT Weekday, COUNT(*) AS HomeWins
+FROM CBJ
+WHERE Location = 'H' AND Result = 'W'
+GROUP BY Weekday
+
+
+--Join both of the results together
+
+SELECT Table1.Weekday, TotalHomeGames, HomeWins
+FROM (
+	SELECT Weekday, COUNT(*) AS TotalHomeGames
+	FROM CBJ
+	WHERE Location = 'H'
+	GROUP BY Weekday
+	) AS Table1
+JOIN (
+	SELECT Weekday, COUNT(*) AS HomeWins
+	FROM CBJ
+	WHERE Location = 'H' AND Result = 'W'
+	GROUP BY Weekday
+	) AS Table2
+ON Table1.Weekday = Table2.Weekday
+
+
+--Calculate win percentage for each weekday at home
+
+WITH HomeGames AS (
+    SELECT Weekday,
+           SUM(CASE WHEN Result = 'W' THEN 1 ELSE 0 END) AS HomeWins,
+           COUNT(*) AS TotalHomeGames
+    FROM CBJ
+    WHERE Location = 'H'
+    GROUP BY Weekday
+	)
+SELECT Weekday,
+       HomeWins,
+       TotalHomeGames,
+       ROUND((CAST(HomeWins AS DECIMAL) / CAST(TotalHomeGames AS DECIMAL)) * 100.0, 2) AS WinPercentage
+FROM HomeGames
+ORDER BY WinPercentage DESC
+
+--This shows us that Thursdays are the best day of the week to attend a home Columbus Blue Jackets Game.
+--Now we need to determine which opponents the Blue Jackets have the best home record against.
+--Using a CTE to query this.
+
+
+WITH HomeOpponentGames AS (
+    SELECT Opponent,
+           SUM(CASE WHEN Result = 'W' THEN 1 ELSE 0 END) AS HomeWins,
+           COUNT(*) AS TotalHomeGames
+    FROM CBJ
+    WHERE Location = 'H'
+    GROUP BY Opponent
+	)
+SELECT Opponent,
+       HomeWins,
+       TotalHomeGames,
+       (CAST(HomeWins AS DECIMAL) / CAST(TotalHomeGames AS DECIMAL)) * 100.0 AS WinPercentage
+FROM HomeOpponentGames
+ORDER BY WinPercentage DESC
+
+
+--This gives us our list of the Blue Jackets opponents, home wins, total number of games and the percentage of games won at home by the Blue Jackets.
+--Our top 5 opponents the Blue Jackets do best against at home are:
+--Florida Panthers 66.67%
+--New Jersey Devils 66.67%
+--Philadelphia Flyers 65.22%
+--New York Islanders 61.54%
+--Minnesota Wild 61.30%
+
+--So our best chance at seeing the Blue Jackets win at home would be on a Thursday against the Florida Panthers.
+--Based on the upcoming 2023-2024 schedule, Thursdays being the best day at home on record, and the above listed 5 teams as
+--the top 5 best opponents to face at home, we can determine that the best nights for a company outing to the Blue Jackets 
+--where they would have the best historical chance at winning are the below dates.
+
+--10/12/2023 against the Philadelphia Flyers
+--04/04/2024 against the New York Islanders
